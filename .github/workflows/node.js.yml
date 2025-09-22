@@ -1,0 +1,30 @@
+name: Node.js CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: self-hosted
+    strategy:
+      matrix:
+        node-version: [20.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm ci
+    - run: |
+        touch .env
+        echo "STRIPE_PRIVATE_KEY=${{ secrets.STRIPE_PRIVATE_KEY }}" >> .env
+        echo "EMAIL_USER=${{ secrets.EMAIL_USER }}" >> .env
+        echo "APP_PASSWORD=${{ secrets.APP_PASSWORD }}" >> .env
+        echo "FIREBASE_ADMIN_KEY=${{ secrets.FIREBASE_ADMIN_KEY }}" >> .env
+        echo "FIREBASE_CONTENT_PROVIDER_KEY=${{ secrets.FIREBASE_CONTENT_PROVIDER_KEY }}" >> .env
+    - run: pm2 restart index.js --name susila   # Restart existing process if running
+    - run: pm2 reload all  # Reload all PM2 processes
